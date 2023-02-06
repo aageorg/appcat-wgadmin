@@ -61,23 +61,6 @@ type Config struct {
 	Server   Server   `json:"server"`
 }
 
-type Configurator interface {
-	Set(s string, f string)
-}
-
-func (c Config) Set(s string, f string) {
-
-	t := reflect.TypeOf(c)
-	if f == "" {
-		for i := 0; i < t.NumField(); i++ {
-			if t.Field(i).Name == s {
-				break
-			}
-		}
-
-	}
-}
-
 func removeEsc(slice []byte) []byte {
 	esc := [...]byte{' ', '\n', '\t'}
 	var result []byte
