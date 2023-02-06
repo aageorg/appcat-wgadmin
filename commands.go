@@ -28,7 +28,7 @@ func (w *Wg) AddPeer() error {
 
 	copyip := func(ip net.IP) (net.IP, error) {
 		if ip.To4 == nil {
-			return nil, errors.New("IP address " + ip.String() + " is not a valid IPv4 address") 
+			return nil, errors.New("IP address " + ip.String() + " is not a valid IPv4 address")
 		}
 		var newip net.IP
 		return append(newip, ip[len(ip)-4:]...), nil
@@ -72,9 +72,9 @@ func (w *Wg) AddPeer() error {
 	var nets []net.IPNet
 	if w.IPNat == nil {
 		fromIP, err := copyip(w.IPAddress)
-	if err != nil {
-		return err
-}
+		if err != nil {
+			return err
+		}
 
 		fromIP[3] = 128
 		w.IPNat = &net.IPNet{net.IP(fromIP).Mask(net.CIDRMask(25, 32)), net.IPMask{255, 255, 255, 128}}
@@ -90,7 +90,7 @@ func (w *Wg) AddPeer() error {
 	ip, err := copyip(w.IPNat.IP)
 	if err != nil {
 		return err
-}
+	}
 	for !unic(ip, nets) {
 		incr(&ip)
 	}
@@ -420,9 +420,9 @@ func (a Command) Register() {
 
 			err := db.addUser(a.User)
 			if err != nil {
-			bot.Message["en"] = TgMessage("Register() error on writing to db: "+err.Error())
-			bot.Report()
-			return
+				bot.Message["en"] = TgMessage("Register() error on writing to db: " + err.Error())
+				bot.Report()
+				return
 			}
 			bot.Message["ru"] = TgMessage("Вы зарегистрировались")
 			bot.Message["en"] = TgMessage("Done!")
@@ -439,13 +439,13 @@ func (a Command) Register() {
 
 		err := db.addUser(a.User)
 		if err != nil {
-			bot.Message["en"] = TgMessage("Register() error on writing to db: "+err.Error())
+			bot.Message["en"] = TgMessage("Register() error on writing to db: " + err.Error())
 			bot.Report()
 			return
 		}
 		err = db.setAdmin(a.User)
 		if err != nil {
-			bot.Message["en"] = TgMessage("Register() error on writing to db: "+err.Error())
+			bot.Message["en"] = TgMessage("Register() error on writing to db: " + err.Error())
 			bot.Report()
 			return
 		}
@@ -466,9 +466,9 @@ func (a Command) Newvpn() {
 	wg := Wg{Owner: a.User}
 	wgid, err := db.addVpn(wg)
 	if err != nil {
-			bot.Message["en"] = TgMessage("Newvpn() error on writing to db: "+err.Error())
-			bot.Report()
-			return
+		bot.Message["en"] = TgMessage("Newvpn() error on writing to db: " + err.Error())
+		bot.Report()
+		return
 	}
 	wg.Id = wgid
 	wg.Server = cfg.Server
@@ -487,9 +487,9 @@ func (a Command) Newvpn() {
 
 	wgid, err = db.addVpn(wg)
 	if err != nil {
-					bot.Message["en"] = TgMessage("Newvpn() error on writing to db: "+err.Error())
-			bot.Report()
-			return
+		bot.Message["en"] = TgMessage("Newvpn() error on writing to db: " + err.Error())
+		bot.Report()
+		return
 	}
 }
 
@@ -537,7 +537,7 @@ func (a Command) Addpeer() {
 		wg.Update()
 		_, err = db.addVpn(wg)
 		if err != nil {
-			bot.Message["en"] = TgMessage("Newvpn() error on writing to db: "+err.Error())
+			bot.Message["en"] = TgMessage("Newvpn() error on writing to db: " + err.Error())
 			bot.Report()
 			return
 		}
@@ -687,13 +687,13 @@ func (a Command) Setpaid() {
 	}
 	_, err = db.addVpn(wgs[wgid])
 	if err != nil {
-		bot.Message["en"] = TgMessage("Setpaid() error on writing to db: "+err.Error())
+		bot.Message["en"] = TgMessage("Setpaid() error on writing to db: " + err.Error())
 		bot.Report()
 		return
 	}
 	err = wgs[wgid].Update()
 	if err != nil {
-		bot.Message["en"] = TgMessage("Setpaid() error on calling RPC: "+err.Error())
+		bot.Message["en"] = TgMessage("Setpaid() error on calling RPC: " + err.Error())
 		bot.Report()
 		return
 	}
@@ -797,7 +797,7 @@ func (a Command) Setplan() {
 	users[userid].Plan = plan
 	err = db.addUser(users[userid])
 	if err != nil {
-		bot.Message["en"] = TgMessage("Setplan() error on writting to db: "+err.Error())
+		bot.Message["en"] = TgMessage("Setplan() error on writting to db: " + err.Error())
 		bot.Report()
 		return
 	}

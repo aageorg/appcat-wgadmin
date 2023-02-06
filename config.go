@@ -82,13 +82,17 @@ func removeEsc(slice []byte) []byte {
 	esc := [...]byte{' ', '\n', '\t'}
 	var result []byte
 	value := false
-	for _, j := range slice {
+	for i, j := range slice {
 		keep := true
 		if j == '"' {
 			if value == false {
 				value = true
 			} else {
-				value = false
+				if slice[i-1] != '\\' {
+					value = false
+				} else {
+					value = true
+				}
 			}
 		}
 		for _, s := range esc {
@@ -104,7 +108,6 @@ func removeEsc(slice []byte) []byte {
 	return result
 }
 
-
 func readconf() []byte {
 	var result []byte
 	f, err := os.Open(CfgPath)
@@ -118,8 +121,20 @@ func readconf() []byte {
 	var buf []byte
 	for scanner.Scan() {
 		buf = removeEsc(scanner.Bytes())
+		value := false
 		for i := 0; i < len(buf); i++ {
-			if buf[i] == '#' {
+			if buf[i] == '"' {
+				if value == false {
+					value = true
+				} else {
+					if buf[i-1] != '\\' {
+						value = false
+					} else {
+						value = true
+					}
+				}
+			}
+			if buf[i] == '#' && value == false {
 				buf = buf[:i]
 				break
 			}
