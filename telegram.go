@@ -101,7 +101,7 @@ func (c Chatbot) Reply() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%s\n", body)
+
 	requestBody := bytes.NewReader(body)
 
 	res, err := http.Post(cfg.Tg.getUrl()+"/sendMessage",

@@ -3,8 +3,6 @@ package main
 import (
 	"encoding/base64"
 	"errors"
-	"fmt"
-	"log"
 	"math/rand"
 	"net"
 	"reflect"
@@ -28,13 +26,12 @@ func (w *Wg) AddPeer() error {
 
 	}
 
-	copyip := func(ip net.IP) net.IP {
+	copyip := func(ip net.IP) (net.IP, error) {
 		if ip.To4 == nil {
-			fmt.Println("A parameter is not a valid IPv4 address")
-			return ip
+			return nil, errors.New("IP address " + ip.String() + " is not a valid IPv4 address") 
 		}
 		var newip net.IP
-		return append(newip, ip[len(ip)-4:]...)
+		return append(newip, ip[len(ip)-4:]...), nil
 	}
 
 	unic := func(ip net.IP, addr []net.IPNet) bool {
@@ -74,12 +71,15 @@ func (w *Wg) AddPeer() error {
 	}
 	var nets []net.IPNet
 	if w.IPNat == nil {
-		fromIP := copyip(w.IPAddress)
+		fromIP, err := copyip(w.IPAddress)
+	if err != nil {
+		return err
+}
+
 		fromIP[3] = 128
 		w.IPNat = &net.IPNet{net.IP(fromIP).Mask(net.CIDRMask(25, 32)), net.IPMask{255, 255, 255, 128}}
 	}
 	nets = append(nets, net.IPNet{net.IP(w.IPNat.IP).Mask(net.CIDRMask(32, 32)), net.IPMask{255, 255, 255, 255}})
-	fmt.Println(w.IPNat.String())
 	for _, p := range w.Peers {
 		if p.PublicKey == key {
 			return errors.New("The peer with given public key is already exist")
@@ -87,7 +87,10 @@ func (w *Wg) AddPeer() error {
 		net := net.IPNet{net.IP(p.IPAddress).Mask(net.CIDRMask(32, 32)), net.IPMask{255, 255, 255, 255}}
 		nets = append(nets, net)
 	}
-	ip := copyip(w.IPNat.IP)
+	ip, err := copyip(w.IPNat.IP)
+	if err != nil {
+		return err
+}
 	for !unic(ip, nets) {
 		incr(&ip)
 	}
@@ -234,11 +237,6 @@ func (a Command) exec() {
 
 	if ok {
 		if a.granted() {
-			//	bot = Chatbot{
-			//		Chat_id:        a.Chat.Id,
-			//		My_new_message: "You can run /" + a.Name,
-			//	}
-			//	bot.Reply()
 			reflect.ValueOf(&a).MethodByName(strings.Title(a.Name)).Call([]reflect.Value{})
 		} else {
 			bot = Chatbot{
@@ -312,7 +310,7 @@ func (a Command) Getvpns() {
 	var output string
 	for _, u := range users {
 		wgs := db.getVpns(u.Tg_id)
-		fmt.Println(wgs)
+
 		if len(wgs) > 0 {
 			output = u.Name + " (@" + u.Username + ")\n"
 			for i, w := range wgs {
@@ -422,7 +420,9 @@ func (a Command) Register() {
 
 			err := db.addUser(a.User)
 			if err != nil {
-				log.Fatal(err)
+			bot.Message["en"] = TgMessage("Register() error on writing to db: "+err.Error())
+			bot.Report()
+			return
 			}
 			bot.Message["ru"] = TgMessage("Вы зарегистрировались")
 			bot.Message["en"] = TgMessage("Done!")
@@ -439,11 +439,15 @@ func (a Command) Register() {
 
 		err := db.addUser(a.User)
 		if err != nil {
-			log.Fatal(err)
+			bot.Message["en"] = TgMessage("Register() error on writing to db: "+err.Error())
+			bot.Report()
+			return
 		}
 		err = db.setAdmin(a.User)
 		if err != nil {
-			log.Fatal(err)
+			bot.Message["en"] = TgMessage("Register() error on writing to db: "+err.Error())
+			bot.Report()
+			return
 		}
 
 		bot.RemoveMarkup()
@@ -458,13 +462,14 @@ func (a Command) Register() {
 }
 
 func (a Command) Newvpn() {
+	bot := Chatbot{Chat_id: a.Chat.Id}
 	wg := Wg{Owner: a.User}
 	wgid, err := db.addVpn(wg)
 	if err != nil {
-		log.Fatal(err)
+			bot.Message["en"] = TgMessage("Newvpn() error on writing to db: "+err.Error())
+			bot.Report()
+			return
 	}
-	bot := Chatbot{Chat_id: a.Chat.Id}
-
 	wg.Id = wgid
 	wg.Server = cfg.Server
 	wg.New()
@@ -482,7 +487,9 @@ func (a Command) Newvpn() {
 
 	wgid, err = db.addVpn(wg)
 	if err != nil {
-		log.Fatal(err)
+					bot.Message["en"] = TgMessage("Newvpn() error on writing to db: "+err.Error())
+			bot.Report()
+			return
 	}
 }
 
@@ -514,6 +521,7 @@ func (a Command) Addpeer() {
 
 	addpeer := func(wgid int) {
 		Mu.Lock()
+		defer Mu.Unlock()
 		var wg Wg
 		wg = db.getVpn(wgid)
 		err := wg.AddPeer()
@@ -529,10 +537,10 @@ func (a Command) Addpeer() {
 		wg.Update()
 		_, err = db.addVpn(wg)
 		if err != nil {
-			log.Fatal(err)
+			bot.Message["en"] = TgMessage("Newvpn() error on writing to db: "+err.Error())
+			bot.Report()
+			return
 		}
-		Mu.Unlock()
-
 	}
 
 	if len(wgs) == 0 {
@@ -673,21 +681,21 @@ func (a Command) Setpaid() {
 	for i, _ := range wgs[wgid].Peers {
 
 		wgs[wgid].Peers[i].Enable()
-		fmt.Println("enable peers")
 	}
 	if wgs[wgid].Server.IPAddress == nil {
 		wgs[wgid].Server = cfg.Server
 	}
-	fmt.Println("==============")
-	fmt.Printf("%+v", wgs[wgid])
-	fmt.Println("\n==============")
 	_, err = db.addVpn(wgs[wgid])
 	if err != nil {
-		log.Fatal(err)
+		bot.Message["en"] = TgMessage("Setpaid() error on writing to db: "+err.Error())
+		bot.Report()
+		return
 	}
 	err = wgs[wgid].Update()
 	if err != nil {
-		log.Fatal(err)
+		bot.Message["en"] = TgMessage("Setpaid() error on calling RPC: "+err.Error())
+		bot.Report()
+		return
 	}
 
 	bot.Message["en"] = TgMessage("A new paid period is set for vpn wg" + strconv.Itoa(wgs[wgid].Id) + " till " + time.Unix(wgs[wgid].Paidtill, 0).Format("02.01.2006 15:04"))
@@ -789,7 +797,8 @@ func (a Command) Setplan() {
 	users[userid].Plan = plan
 	err = db.addUser(users[userid])
 	if err != nil {
-		fmt.Println(err.Error())
+		bot.Message["en"] = TgMessage("Setplan() error on writting to db: "+err.Error())
+		bot.Report()
 		return
 	}
 	bot.Message["en"] = TgMessage("A new rate is set for user " + users[userid].Name + "  -  " + strconv.Itoa(plan) + " rub/month per device")
@@ -895,7 +904,10 @@ func (a Command) Invite() {
 	inv.Expire = now + (60 * 60 * 24)
 	err := db.addInvitation(inv)
 	if err != nil {
-		fmt.Println(err)
+		bot.Message["en"] = TgMessage("Sorry, but something went wrong. You can not create invitation code at the moment")
+		bot.Reply()
+		bot.Message["en"] = TgMessage("Invite() error on writting to db: " + err.Error())
+		bot.Report()
 		return
 	}
 	bot.Message["en"] = TgMessage("Here is the invitation code. Forward it to the friend, who will use it when run /register. The code will expire in 24h\n\n")
@@ -933,7 +945,6 @@ func (a Command) Adoptvpn() {
 		return
 	}
 	wg.Get()
-	fmt.Printf("%+v", wg)
 
 	users := db.getUsers()
 	bot.Message["en"] = TgMessage("Select an owner: \n\n")
@@ -945,7 +956,6 @@ func (a Command) Adoptvpn() {
 		}
 		output += strconv.Itoa(i+1) + ". " + u.Name + username
 	}
-	//bot.Message["en"] = TgMessage("Registered users:")
 	bot.Message["en"] += CodeBlock(output)
 	bot.Reply()
 

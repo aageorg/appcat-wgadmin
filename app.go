@@ -55,7 +55,8 @@ func main() {
 
 	err = db.init()
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("Database error: " + err.Error())
+		return
 	}
 
 	secret := db.getWebhookSecret()

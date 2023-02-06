@@ -58,8 +58,6 @@ type Regru struct {
 type Config struct {
 	Tg       Telegram `json:"telegram"`
 	Reg      Regru    `json:"regru"`
-	Smsru    string   `json:"smsru_apikey"`
-	SmsAero  string   `json:"smsAero_apikey"`
 	Database string   `json:"database"`
 	Server   Server   `json:"server"`
 }
@@ -74,9 +72,6 @@ func (c Config) Set(s string, f string) {
 	if f == "" {
 		for i := 0; i < t.NumField(); i++ {
 			if t.Field(i).Name == s {
-				//				r := reflect.New(t.Field(i).Type)
-
-				fmt.Println("created new struct")
 				break
 			}
 		}
@@ -85,19 +80,31 @@ func (c Config) Set(s string, f string) {
 }
 
 func removeEsc(slice []byte) []byte {
-	esc := [...]byte{' ', '\n', '\t', '\r', '	'}
+	esc := [...]byte{' ', '\n', '\t'}
 	var result []byte
+	value := false
 	for _, j := range slice {
+		keep := true
+		if j == '"' {
+			if value == false {
+				value = true
+			} else {
+				value = false
+			}
+		}
 		for _, s := range esc {
-			if s == j {
+			if s == j && value == false {
+				keep = false
 				break
 			}
+		}
+		if keep == true {
 			result = append(result, j)
-			break
 		}
 	}
 	return result
 }
+
 
 func readconf() []byte {
 	var result []byte
