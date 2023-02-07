@@ -1,5 +1,5 @@
 # Wgadmin
-This software is a Telegrm bot who provides Wireguard VPN settings to users. 
+This software is a Telegram bot who configures Wireguard VPNs fot its users. 
 
 ## Requirements
 + Bolt (https://github.com/boltdb/bolt/)
