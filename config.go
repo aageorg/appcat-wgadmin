@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"reflect"
 	"strings"
 )
 
@@ -136,18 +135,8 @@ func readconf() []byte {
 
 }
 
-func isValidS(t interface{}, s string) bool {
 
-	rt := reflect.TypeOf(t)
 
-	for i := 0; i < rt.NumField(); i++ {
-		f := rt.Field(i)
-		if f.Name == s {
-
-		}
-	}
-	return false
-}
 
 func (c *Config) Parse() error {
 	cfg := readconf()
