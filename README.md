@@ -9,5 +9,5 @@ This software is a Telegram bot who configures Wireguard VPNs fot its users.
 ## Getting started
 1. Create your own telegram bot via @BotFather
 2. Configure securely connection between wireguard server's side and wgadmin bot unless they are not on the same server. Use VPN or closed from the Internet local area network
-3. Copy default.conf to appcat.conf Read instructions inside and edit file using your credentials and preferences. 
+3. Copy default.conf to appcat.conf. Read instructions inside and edit file using your credentials and preferences. 
 4. Launch your wgadmin bot
